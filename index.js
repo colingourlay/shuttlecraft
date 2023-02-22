@@ -9,9 +9,10 @@ import cors from 'cors';
 import http from 'http';
 import basicAuth from 'express-basic-auth';
 import moment from 'moment';
+import multer from 'multer';
 import { ActivityPub } from './lib/ActivityPub.js';
 import { ensureAccount } from './lib/account.js';
-import { account, webfinger, inbox, outbox, admin, notes, publicFacing } from './routes/index.js';
+import { account, webfinger, inbox, outbox, admin, notes, publicFacing, api, oauth } from './routes/index.js';
 
 // load process.env from .env file
 dotenv.config();
@@ -85,6 +86,8 @@ app.use(
   })
 ); // support encoded bodies
 
+app.use(multer().array()); // support multipart form-data
+
 // basic http authorizer
 const basicUserAuth = basicAuth({
   authorizer: asyncAuthorizer,
@@ -136,6 +139,11 @@ ensureAccount(USERNAME, DOMAIN).then(myaccount => {
   app.use('/api/inbox', cors(), inbox);
   app.use('/api/outbox', cors(), outbox);
 
+  // handle 3rd-party clients
+  app.use('/api', cors(), api);
+  app.use('/oauth', cors(), oauth);
+
+  // handle web ui
   app.use(
     '/private',
     cors({
