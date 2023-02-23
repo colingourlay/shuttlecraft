@@ -3,7 +3,8 @@ import express from 'express';
 import { getAccountForMastodonAPI } from '../lib/account.js';
 import { createApplication } from '../lib/applications.js';
 import { getInstanceForMastodonAPI } from '../lib/instance.js';
-import { authorizedAccessTokens } from '../lib/tokens.js';
+import { isAccessTokenAuthorized } from '../lib/tokens.js';
+
 const logger = debug('ono:api');
 
 const logRequest = req => {
@@ -30,19 +31,21 @@ const notFound = (req, res) => {
   return res.sendStatus(400);
 };
 
-export const router = express.Router();
-
-// Accounts
-router.get('/v1/accounts/verify_credentials', (req, res) => {
-  const { authorization } = req.headers;
+const authorize = (req, res, next) => {
+  const authorization = req.headers.authorization || '';
   const [, accessToken] = authorization.split(' ');
 
-  if (!authorizedAccessTokens.has(accessToken)) {
+  if (typeof accessToken !== 'string' || accessToken.length !== 64 || !isAccessTokenAuthorized(accessToken)) {
     return res.status(401).send({ error: 'The access token is invalid' });
   }
 
-  return res.send(getAccountForMastodonAPI(true));
-});
+  next();
+};
+
+export const router = express.Router();
+
+// Accounts
+router.get('/v1/accounts/verify_credentials', authorize, (_req, res) => res.send(getAccountForMastodonAPI(true)));
 router.post('/v1/accounts/update_credentials', notImplemented);
 router.post('/v1/accounts/relationships', notImplemented);
 router.post('/v1/accounts/familiar_followers', notImplemented);
