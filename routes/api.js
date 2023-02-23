@@ -1,6 +1,8 @@
 import debug from 'debug';
 import express from 'express';
+import { getAccountForMastodonAPI } from '../lib/account.js';
 import { createApplication } from '../lib/applications.js';
+import { authorizedAccessTokens } from '../lib/tokens.js';
 const logger = debug('ono:api');
 
 const logRequest = req => {
@@ -30,7 +32,16 @@ const notFound = (req, res) => {
 export const router = express.Router();
 
 // Accounts
-router.post('/v1/accounts/verify_credentials', notImplemented);
+router.get('/v1/accounts/verify_credentials', (req, res) => {
+  const { authorization } = req.headers;
+  const [, accessToken] = authorization.split(' ');
+
+  if (!authorizedAccessTokens.has(accessToken)) {
+    return res.status(401).send({ error: 'The access token is invalid' });
+  }
+
+  return res.send(getAccountForMastodonAPI(true));
+});
 router.post('/v1/accounts/update_credentials', notImplemented);
 router.post('/v1/accounts/relationships', notImplemented);
 router.post('/v1/accounts/familiar_followers', notImplemented);
