@@ -2,6 +2,7 @@ import debug from 'debug';
 import express from 'express';
 import { getAccountForMastodonAPI } from '../lib/account.js';
 import { createApplication } from '../lib/applications.js';
+import { getInstanceForMastodonAPI } from '../lib/instance.js';
 import { authorizedAccessTokens } from '../lib/tokens.js';
 const logger = debug('ono:api');
 
@@ -102,8 +103,8 @@ router.post('/v1/filters', notImplemented);
 router.post('/v2/filters', notImplemented);
 
 // Instance
-router.post('/v1/instance', notImplemented);
-router.post('/v2/instance', notImplemented);
+router.get('/v1/instance', (_req, res) => res.send(getInstanceForMastodonAPI()));
+router.get('/v2/instance', (_req, res) => res.send(getInstanceForMastodonAPI(2)));
 
 // Media
 router.post('/v1/media', notImplemented);
