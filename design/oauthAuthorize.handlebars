@@ -1,0 +1,20 @@
+{{#if error}}
+<div class="error">
+  {{error.message}}
+</div>
+{{else}}
+<form action="/oauth/authorize" method="post">
+  <fieldset>
+    <legend>Authorize</legend>
+    <p>Do you want to give {{ application.name }} access to your Shuttlecraft?</p>
+    <p>It will have permission to: {{ scope }}</p>
+    <input type="hidden" name="client_id" value="{{ application.clientId }}">
+    <input type="hidden" name="redirect_uri" value="{{ redirectURI }}">
+    <input type="hidden" name="scope" value="{{ scope }}">
+  </fieldset>
+  <div>
+    <a href="javascript:window.close()">Deny</a>
+    <button type="submit">Allow</button>
+  </div>
+</form>
+{{/if}}
