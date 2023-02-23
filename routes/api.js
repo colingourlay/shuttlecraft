@@ -1,12 +1,32 @@
+import debug from 'debug';
 import express from 'express';
-export const router = express.Router();
+const logger = debug('ono:api');
+
+const logRequest = req => {
+  logger(`Attempt to ${req.method} to API endpoint: "${req.path}"`);
+
+  logger('[headers]', req.headers);
+
+  if (req.method === 'GET') {
+    logger('[query]', req.query);
+  } else if (req.method === 'POST') {
+    logger('[body]', req.body);
+  }
+};
 
 const notImplemented = (req, res) => {
-  console.error(`Attempt to post to API endpoint: "${req.path}"`);
-  console.debug(req.body);
+  logRequest(req);
 
-  return res.status(501).end();
+  return res.sendStatus(501);
 };
+
+const notFound = (req, res) => {
+  logRequest(req);
+
+  return res.sendStatus(400);
+};
+
+export const router = express.Router();
 
 // Accounts
 router.post('/v1/accounts/verify_credentials', notImplemented);
@@ -84,3 +104,7 @@ router.post('/v1/timelines/tag/:hashtag', notImplemented);
 router.post('/v1/trends/links', notImplemented);
 router.post('/v1/trends/statuses', notImplemented);
 router.post('/v1/trends/tags', notImplemented);
+
+// Other
+router.get('*', notFound);
+router.post('*', notFound);
