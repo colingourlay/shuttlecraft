@@ -1,7 +1,7 @@
 import debug from 'debug';
 import express from 'express';
-import { getAccountForMastodonAPI } from '../lib/account.js';
-import { createApplication } from '../lib/applications.js';
+import { getAccountForMastodonAPI, createNote } from '../lib/account.js';
+import { createApplication, getApplicationForAuthorizedAccessToken } from '../lib/applications.js';
 import { getInstanceForMastodonAPI } from '../lib/instance.js';
 import { isAccessTokenAuthorized } from '../lib/tokens.js';
 
@@ -31,9 +31,15 @@ const notFound = (req, res) => {
   return res.sendStatus(400);
 };
 
-const authorize = (req, res, next) => {
+const parseAccessToken = req => {
   const authorization = req.headers.authorization || '';
   const [, accessToken] = authorization.split(' ');
+
+  return accessToken;
+};
+
+const authorize = (req, res, next) => {
+  const accessToken = parseAccessToken(req);
 
   if (typeof accessToken !== 'string' || accessToken.length !== 64 || !isAccessTokenAuthorized(accessToken)) {
     return res.status(401).send({ error: 'The access token is invalid' });
@@ -125,7 +131,38 @@ router.post('/v1/polls/:id/votes', notImplemented);
 router.post('/v2/search', notImplemented);
 
 // Statuses
-router.post('/v1/statuses', notImplemented);
+router.post('/v1/statuses', authorize, async (req, res) => {
+  const {
+    status,
+    // media_ids: mediaIds,
+    // poll, // {options: string[], expires_in: number, multiple: boolean, hide_totals: boolean}
+    in_reply_to_id: inReplyToId,
+    sensitive,
+    spoiler_text: spoilerText
+    // visibility,
+    // language,
+    // scheduled_at: scheduledAt
+  } = req.body;
+
+  if (!status) {
+    return res.status(422).send({ error: "Validation failed: Text can't be blank" });
+  }
+
+  const accessToken = parseAccessToken(req);
+  const application = getApplicationForAuthorizedAccessToken(accessToken);
+  const note = await createNote(status, sensitive && spoilerText, inReplyToId || null, null, null);
+  const { id, published, content } = note;
+
+  res.send({
+    id,
+    created_at: published,
+    content,
+    application: {
+      name: application.name,
+      website: application.website
+    }
+  });
+});
 router.post('/v1/statuses/:id', notImplemented);
 router.post('/v1/statuses/:id/context', notImplemented);
 router.post('/v1/statuses/:id/favourite', notImplemented);
