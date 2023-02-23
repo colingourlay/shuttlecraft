@@ -1,5 +1,6 @@
 import debug from 'debug';
 import express from 'express';
+import { createApplication } from '../lib/applications.js';
 const logger = debug('ono:api');
 
 const logRequest = req => {
@@ -50,7 +51,31 @@ router.post('/v1/announcements', notImplemented);
 router.post('/v1/announcements/:pk/dismiss', notImplemented);
 
 // Apps
-router.post('/v1/apps', notImplemented);
+router.post('/v1/apps', (req, res) => {
+  const { client_name: name, website, redirect_uris: redirectURIs, scopes = 'read' } = req.body;
+  let application;
+
+  try {
+    application = createApplication({
+      name,
+      website,
+      redirectURIs,
+      scopes
+    });
+  } catch (err) {
+    return res.status(422).send(err.message);
+  }
+
+  const { clientId, clientSecret } = application;
+
+  return res.status(200).send({
+    name,
+    website,
+    redirect_uri: redirectURIs,
+    client_id: clientId,
+    client_secret: clientSecret
+  });
+});
 
 // Conversations
 router.post('/v1/conversations', notImplemented);
